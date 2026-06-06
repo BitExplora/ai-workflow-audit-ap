@@ -2,57 +2,49 @@
 
 A reproducible proof-of-concept for **auditing an AI automation opportunity before
 building it**: decompose a workflow, score each step on impact × risk, measure the
-risky steps empirically in a sandbox, and quantify the dollar value of the right
-operating model (usually hybrid, not full automation).
+risky steps in a sandbox, and quantify the dollar value of the right operating
+model (usually hybrid, not full automation).
 
 POC #1 of a three-part series: manufacturing AP → finance/banking fraud → healthcare (HIPAA).
 
 ## Why this exists
 
-Most enterprise AI pilots fail on integration and risk, not model quality. The
-fix is a diagnostic *before* the build: which steps to automate, which to run
-hybrid (AI proposes, human approves), and which to leave manual — scored on
-business impact and the cost of an AI error. This repo demonstrates that
-diagnostic end to end on a manufacturing accounts-payable workflow.
+Most enterprise AI pilots fail on integration and risk, not model quality. The fix
+is a diagnostic *before* the build: which steps to automate, which to run hybrid
+(AI proposes, human approves), and which to leave manual — scored on business
+impact and the cost of an AI error.
 
-## What it shows
+## Headline result
 
-On a synthetic three-way-match dataset, the candidate automation matches invoices
-at **99.4% accuracy** but catches only **50% of fraud**. Because a paid
-fraudulent invoice is irreversible, the value model shows **naive full automation
-nets ~$0.10M/yr while a hybrid model with a human payment gate nets ~$3.28M/yr**
-(illustrative inputs). The audit's job is to find that gap before the client
-spends a quarter building the wrong thing.
+On a synthetic three-way-match dataset, the automation matches invoices at
+**99.4% accuracy** but catches only **50% of fraud**. Because a paid fraudulent
+invoice is irreversible, the value model shows **naive full automation nets
+~$0.10M/yr while a hybrid model with a human payment gate nets ~$3.28M/yr**
+(illustrative inputs). Finding that gap before the client builds is the product.
 
-## Repository structure
+## Files
 
-```
-ap-audit-poc/
-├── README.md
-├── data/
-│   ├── generate_data.py      # reproducible synthetic dataset (seed=42)
-│   ├── vendors.csv           # vendor master incl. bank details
-│   ├── purchase_orders.csv   # what we agreed to buy
-│   ├── goods_receipts.csv    # what was received
-│   ├── invoices.csv          # what the vendor billed
-│   └── ground_truth.csv      # labeled disposition per invoice (the tail)
-├── harness/
-│   ├── match_engine.py       # automation under test (rules; LLM/MCP in prod)
-│   ├── run_audit.py          # offline-eval: scores engine vs ground truth
-│   └── results.json          # emitted metrics (feeds the value model)
-└── reports/
-    ├── audit_report.md        # the consulting deliverable
-    ├── build_value_model.py   # builds the Excel model from results.json
-    └── value_model.xlsx       # impact×risk scoring + value equation (formulas)
-```
+| File | What it is |
+|---|---|
+| `audit_report.md` | The consulting deliverable: scoring, matrix, recommendations, value math |
+| `value_model.xlsx` | Impact×risk scoring + value equation (formula-driven, swap in client numbers) |
+| `generate_data.py` | Reproducible synthetic dataset generator (seed = 42) |
+| `match_engine.py` | The automation under test (rules now; an LLM via MCP in production) |
+| `run_audit.py` | Offline-eval: scores the engine vs ground truth, writes `results.json` |
+| `vendors.csv`, `purchase_orders.csv`, `goods_receipts.csv`, `invoices.csv` | Inputs |
+| `ground_truth.csv` | Labeled correct disposition per invoice (the edge-case tail) |
+| `results.json` | Metrics emitted by the harness (feeds the value model) |
+| `build_value_model.py` | Builds `value_model.xlsx` from `results.json` |
 
 ## How to run
 
+All files live in one folder, so just run them in order:
+
 ```bash
 pip install pandas openpyxl
-cd data    && python generate_data.py      # writes the CSVs
-cd ../harness && python run_audit.py        # prints metrics, writes results.json
-cd ../reports && python build_value_model.py # writes value_model.xlsx
+python generate_data.py      # writes the CSVs
+python run_audit.py          # prints metrics, writes results.json
+python build_value_model.py  # writes value_model.xlsx
 ```
 
 ## The edge-case tail (what makes this a real audit)
